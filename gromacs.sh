@@ -40,8 +40,6 @@ which xmgrace &> /dev/null
 
 if [ ! -e "variables.txt" ]; then
 
-    #dialog --title "Atención" --msgbox 'El archivo variables.txt no se encuentra en esta carpeta. Por favor, instalá uno genérico' 20 60 && exit 1
-
 VARTXT="liganditp = ligand.itp
 ligandname = LIG
 proteinpdb = protein.pdb
@@ -226,11 +224,11 @@ echo "$MDMDP" >> md.mdp
 fi
 
 ##############################################################################
-#                      Definir funciones acá                                 #
+#                      Functions definitions                                 #
 ##############################################################################
 
 
-###### edit function: un editor genérico de texto #########
+###### edit function: the most basic text editor: NANO #########
 
 function edit () {
 
@@ -238,7 +236,7 @@ xterm -rightbar -bg white -fg black -fa 'Monospace' -fs 12 -geometry 92x36 -e "n
 
 }
 
-###### vars function: edita el archivo de variables generales #######
+###### vars function: basic configuration file #######
 
 function vars () {
 
@@ -246,7 +244,7 @@ xterm -rightbar -bg white -fg black -fa 'Monospace' -fs 12 -geometry 92x36 -e "n
 
 }
 
-######### topols function: crea la topología de la proteína ########
+######### topols function: it will create the receptor topology ########
 
 function topols () {
 
@@ -257,7 +255,7 @@ export watermodel=$(grep 'watermodel' variables.txt | sed 's/^.*= //')
 if [ -e "$proteinpdb" ]; then
 xterm -rightbar -bg white -fg black -fa 'Monospace' -fs 12 -geometry 92x36 -e "gmx pdb2gmx -f $proteinpdb -ff $forcefield -water $watermodel -ignh -o protein-complex.pdb; bash"
 else
-dialog --title 'Atención' --msgbox 'El archivo de la proteína, no se encuentra' 10 20
+dialog --title 'Atención' --msgbox 'Protein file $proteinpdb not found' 10 20
 
 fi
 }
@@ -269,7 +267,7 @@ function edtop () {
 if [ -e "topol.top" ]; then
 xterm -rightbar -bg white -fg black -fa 'Monospace' -fs 12 -geometry 92x36 -e "nano -wcSr68 topol.top; bash"
 else
-dialog --title 'Atención' --msgbox 'El archivo de topología topol.top, no se encuentra' 10 20
+dialog --title 'Atención' --msgbox 'Topology file topol.top, not found' 10 20
 
 fi
 
