@@ -522,7 +522,7 @@ function viewlogs() {
 
 # Cleanup function
 function cleanup() {
-    dialog --title 'Limpieza de archivos' --yesno 'Esta acción eliminará archivos temporales:\n- *.trr\n- *.edr\n- *.log (excepto el log principal)\n- mdout.mdp\n- *.xtc (temporal)\n\n¿Desea continuar?' 15 60
+    dialog --title 'Limpieza de archivos' --yesno 'Esta acción eliminará archivos temporales:\n- Archivos de trayectoria (*.trr, *.xtc grandes)\n- Archivos de energía (*.edr)\n- Archivos de respaldo (#*)\n- mdout.mdp\n\n¿Desea continuar?' 15 60
     
     if [ $? -eq 0 ]; then
         rm -f mdout.mdp 2>/dev/null
@@ -531,7 +531,15 @@ function cleanup() {
         local count=0
         # Use nullglob to handle case where no files match
         shopt -s nullglob
-        for file in *.trr *.edr; do
+        for file in *.trr *.edr *.xtc; do
+            # Skip compressed trajectory if it's small (probably the production run)
+            if [[ "$file" == *.xtc ]] && [[ -f "$file" ]]; then
+                local size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null)
+                # Skip if larger than 100MB (likely production trajectory)
+                if [ "$size" -gt 104857600 ]; then
+                    continue
+                fi
+            fi
             rm -f "$file" && ((count++))
         done
         shopt -u nullglob
