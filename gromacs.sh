@@ -532,9 +532,10 @@ function cleanup() {
         # Use nullglob to handle case where no files match
         shopt -s nullglob
         for file in *.trr *.edr *.xtc; do
-            # Skip compressed trajectory if it's small (probably the production run)
+            # Skip compressed trajectory if it's large (probably the production run)
             if [[ "$file" == *.xtc ]] && [[ -f "$file" ]]; then
-                local size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null)
+                # Use portable method to get file size
+                local size=$(wc -c < "$file" 2>/dev/null || echo "0")
                 # Skip if larger than 100MB (likely production trajectory)
                 if [ "$size" -gt 104857600 ]; then
                     continue
