@@ -1,0 +1,32 @@
+# GROMACS Console - Files to ignore
+
+# Log files
+*.log
+gromacs_console.log
+
+# Backup directory
+backups/
+
+# Temporary files
+menuchoices.*
+.gromacs_console_initialized
+
+# GROMACS output files (large binary files)
+*.trr
+*.xtc
+*.edr
+*.cpt
+*.tpr
+
+# GROMACS intermediate files
+mdout.mdp
+\#*
+
+# Editor backup files
+*~
+*.swp
+*.swo
+
+# OS specific
+.DS_Store
+Thumbs.db
