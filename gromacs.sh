@@ -108,9 +108,11 @@ load_config() {
             [[ $key =~ ^\[.*\]$ ]] && continue
             [[ -z $key ]] && continue
             
-            # Trim whitespace
-            key=$(echo "$key" | xargs)
-            value=$(echo "$value" | xargs)
+            # Trim whitespace using bash parameter expansion
+            key="${key#"${key%%[![:space:]]*}"}"
+            key="${key%"${key##*[![:space:]]}"}"
+            value="${value#"${value%%[![:space:]]*}"}"
+            value="${value%"${value##*[![:space:]]}"}"
             
             # Export as environment variable
             export "$key=$value"
@@ -476,17 +478,35 @@ function backup() {
     
     mkdir -p "$backup_path"
     
-    # Backup important files
+    # Backup important files with error tracking
+    local backed_up=0
+    local failed=0
     for ext in pdb gro top itp tpr cpt mdp edr log; do
-        find . -maxdepth 1 -name "*.$ext" -exec cp {} "$backup_path/" \; 2>/dev/null
+        while IFS= read -r -d '' file; do
+            if cp "$file" "$backup_path/"; then
+                ((backed_up++))
+            else
+                ((failed++))
+                log_message "WARNING: Failed to backup $file"
+            fi
+        done < <(find . -maxdepth 1 -name "*.$ext" -print0 2>/dev/null)
     done
     
     if [ -f "$CONFIG_FILE" ]; then
-        cp "$CONFIG_FILE" "$backup_path/"
+        if cp "$CONFIG_FILE" "$backup_path/"; then
+            ((backed_up++))
+        else
+            ((failed++))
+            log_message "WARNING: Failed to backup $CONFIG_FILE"
+        fi
     fi
     
-    show_info "Backup creado exitosamente en:\n$backup_path"
-    log_message "Backup created: $backup_path"
+    local message="Backup creado en:\n$backup_path\n\nArchivos respaldados: $backed_up"
+    if [ $failed -gt 0 ]; then
+        message="$message\nFallos: $failed (ver log)"
+    fi
+    show_info "$message"
+    log_message "Backup created: $backup_path ($backed_up files, $failed failed)"
 }
 
 # View logs function
@@ -509,9 +529,12 @@ function cleanup() {
         rm -f \#* 2>/dev/null
         
         local count=0
+        # Use nullglob to handle case where no files match
+        shopt -s nullglob
         for file in *.trr *.edr; do
-            [ -f "$file" ] && rm -f "$file" && ((count++))
+            rm -f "$file" && ((count++))
         done
+        shopt -u nullglob
         
         show_info "Limpieza completada.\n$count archivos eliminados."
         log_message "Cleanup completed: $count files removed"
@@ -566,11 +589,15 @@ function analysis() {
             ;;
         HBOND)
             if [ -f "md.tpr" ]; then
-                $(get_terminal_cmd) -e "gmx hbond -s md.tpr -f md.xtc -num hbond.xvg; xmgrace hbond.xvg & bash"
+                $(get_terminal_cmd) -e "gmx hbond -s md.tpr -f md.xtc -o hbond.xvg -num; xmgrace hbond.xvg & bash"
                 log_message "H-bond analysis performed"
             else
                 show_error "Archivo md.tpr no encontrado"
             fi
+            ;;
+        BACK)
+            # Return to main menu
+            return 0
             ;;
     esac
 }
